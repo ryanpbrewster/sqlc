@@ -17,6 +17,8 @@ func Test_ParamRefParsing(t *testing.T) {
 	}{
 		{name: "tuple comparison", paramRefCount: 2, input: "SELECT * WHERE (a, b) > (?, ?)"},
 		{name: "cast", paramRefCount: 1, input: "SELECT CAST(? AS JSON)"},
+		{name: "convert", paramRefCount: 1, input: "SELECT CONVERT(? USING UTF8)"},
+		{name: "issues/1622", paramRefCount: 1, input: "INSERT INTO foo (x) VALUES (CAST(CONVERT(? USING UTF8) AS JSON))"},
 	}
 	for _, test := range cases {
 		test := test
