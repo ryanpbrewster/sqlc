@@ -9,23 +9,32 @@ import (
 	"github.com/kyleconroy/sqlc/internal/sql/astutils"
 )
 
-func Test_TupleComparison(t *testing.T) {
-	p := dolphin.NewParser()
-	stmts, err := p.Parse(strings.NewReader("SELECT * WHERE (a, b) > (?, ?)"))
-	if err != nil {
-		t.Fatal(err)
+func Test_ParamRefParsing(t *testing.T) {
+	cases := []struct {
+		name          string
+		input         string
+		paramRefCount int
+	}{
+		{name: "tuple comparison", paramRefCount: 2, input: "SELECT * WHERE (a, b) > (?, ?)"},
+		{name: "cast", paramRefCount: 1, input: "SELECT CAST(? AS JSON)"},
 	}
-
-	if l := len(stmts); l != 1 {
-		t.Fatalf("expected 1 statement, got %d", l)
-	}
-
-	// Right now all this test does is make sure we noticed the two ParamRefs.
-	// This ensures that the Go code is generated correctly.
-	e := &refExtractor{}
-	astutils.Walk(e, stmts[0].Raw.Stmt)
-	if l := len(e.params); l != 2 {
-		t.Fatalf("expected to extract 2 params, got %d", l)
+	for _, test := range cases {
+		test := test
+		t.Run(test.name, func(t *testing.T) {
+			p := dolphin.NewParser()
+			stmts, err := p.Parse(strings.NewReader(test.input))
+			if err != nil {
+				t.Fatal(err)
+			}
+			if l := len(stmts); l != 1 {
+				t.Fatalf("expected 1 statement, got %d", l)
+			}
+			e := &refExtractor{}
+			astutils.Walk(e, stmts[0].Raw.Stmt)
+			if got, want := len(e.params), test.paramRefCount; got != want {
+				t.Fatalf("extracted params: want %d, got %d", want, got)
+			}
+		})
 	}
 }
 
