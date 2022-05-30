@@ -50,3 +50,22 @@ func extractParamRefs(n ast.Node) []*ast.ParamRef {
 	}), n)
 	return params
 }
+
+func Test_ParsingDoesNotPanic(t *testing.T) {
+	cases := []struct {
+		name  string
+		input string
+	}{
+		{name: "update implicit join", input: "UPDATE foo, bar SET foo.a = 1, bar.b = 2"},
+	}
+	for _, test := range cases {
+		test := test
+		t.Run(test.name, func(t *testing.T) {
+			p := dolphin.NewParser()
+			_, err := p.Parse(strings.NewReader(test.input))
+			if err != nil {
+				t.Fatal(err)
+			}
+		})
+	}
+}
