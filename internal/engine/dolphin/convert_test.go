@@ -31,25 +31,22 @@ func Test_ParamRefParsing(t *testing.T) {
 			if l := len(stmts); l != 1 {
 				t.Fatalf("expected 1 statement, got %d", l)
 			}
-			e := &refExtractor{}
-			astutils.Walk(e, stmts[0].Raw.Stmt)
-			if got, want := len(e.params), test.paramRefCount; got != want {
+			paramRefs := extractParamRefs(stmts[0].Raw.Stmt)
+			if got, want := len(paramRefs), test.paramRefCount; got != want {
 				t.Fatalf("extracted params: want %d, got %d", want, got)
 			}
 		})
 	}
 }
 
-// refExtractor is an astutils.Visitor instance that will extract all of the
-// ParamRef instances it encounters while walking an AST.
-type refExtractor struct {
-	params []*ast.ParamRef
-}
-
-func (e *refExtractor) Visit(n ast.Node) astutils.Visitor {
-	switch t := n.(type) {
-	case *ast.ParamRef:
-		e.params = append(e.params, t)
-	}
-	return e
+// extractParamRefs extracts all of the ParamRef instances by walking the provided AST.
+func extractParamRefs(n ast.Node) []*ast.ParamRef {
+	var params []*ast.ParamRef
+	astutils.Walk(astutils.VisitorFunc(func(n ast.Node) {
+		switch t := n.(type) {
+		case *ast.ParamRef:
+			params = append(params, t)
+		}
+	}), n)
+	return params
 }
