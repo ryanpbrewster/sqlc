@@ -563,25 +563,25 @@ func (c *cc) convertUpdateStmt(n *pcast.UpdateStmt) *ast.UpdateStmt {
 		panic("expected one range var")
 	}
 
-	relations := &ast.List{}
+	var relations []ast.Node
 	switch rel := rels.Items[0].(type) {
 
 	// Special case for joins in updates
 	case *ast.JoinExpr:
-		left, ok := rel.Larg.(*ast.RangeVar)
-		if !ok {
-			panic("expected range var")
+		left, err := extractRanges(rel.Larg)
+		if err != nil {
+			panic(err)
 		}
-		relations.Items = append(relations.Items, left)
+		relations = append(relations, left...)
 
-		right, ok := rel.Rarg.(*ast.RangeVar)
-		if !ok {
-			panic("expected range var")
+		right, err := extractRanges(rel.Rarg)
+		if err != nil {
+			panic(err)
 		}
-		relations.Items = append(relations.Items, right)
+		relations = append(relations, right...)
 
 	case *ast.RangeVar:
-		relations.Items = append(relations.Items, rel)
+		relations = append(relations, rel)
 
 	default:
 		panic("expected range var")
@@ -593,12 +593,31 @@ func (c *cc) convertUpdateStmt(n *pcast.UpdateStmt) *ast.UpdateStmt {
 		list.Items = append(list.Items, c.convertAssignment(a))
 	}
 	return &ast.UpdateStmt{
-		Relations:     relations,
+		Relations:     &ast.List{Items: relations},
 		TargetList:    list,
 		WhereClause:   c.convert(n.Where),
 		FromClause:    &ast.List{},
 		ReturningList: &ast.List{},
 		WithClause:    c.convertWithClause(n.With),
+	}
+}
+
+func extractRanges(n ast.Node) ([]ast.Node, error) {
+	switch nn := n.(type) {
+	case *ast.RangeVar:
+		return []ast.Node{nn}, nil
+	case *ast.List:
+		var items []ast.Node
+		for _, item := range nn.Items {
+			v, ok := item.(*ast.RangeVar)
+			if !ok {
+				return nil, fmt.Errorf("invalid range var: %+v", item)
+			}
+			items = append(items, v)
+		}
+		return items, nil
+	default:
+		return nil, fmt.Errorf("cannot extract range vars from %+v", nn)
 	}
 }
 

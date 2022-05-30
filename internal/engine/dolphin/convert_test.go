@@ -56,7 +56,14 @@ func Test_ParsingDoesNotPanic(t *testing.T) {
 		name  string
 		input string
 	}{
-		{name: "update implicit join", input: "UPDATE foo, bar SET foo.a = 1, bar.b = 2"},
+		{
+			name:  "update implicit join",
+			input: "UPDATE foo, bar SET foo.a = 1, bar.b = 2",
+		},
+		{
+			name:  "update explicit inner join",
+			input: ` UPDATE foo INNER JOIN bar USING (a) SET foo.b = bar.b`,
+		},
 	}
 	for _, test := range cases {
 		test := test
