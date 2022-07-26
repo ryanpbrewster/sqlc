@@ -56,7 +56,7 @@ code ever again.
    howto/upload.md
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 3
    :caption: Reference
    :hidden:
 
@@ -74,4 +74,5 @@ code ever again.
    :hidden:
 
    guides/development.md
+   guides/plugins.md
    guides/privacy.md
